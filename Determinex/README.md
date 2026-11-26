@@ -11,27 +11,27 @@
 | **AMD hardware** | Radeon Cloud · ROCm 7.2.1 · vLLM 0.16.1 |
 | **Models measured** | Qwen2.5-Coder-7B-Instruct (bf16) and Qwen2.5-Coder-32B-Instruct-AWQ |
 
-[![Track 2 Determinex](https://github.com/DarthCeltic/Radeon-hackathon-2026-07/actions/workflows/track2-determinex.yml/badge.svg?branch=track2-determinex)](https://github.com/DarthCeltic/Radeon-hackathon-2026-07/actions/workflows/track2-determinex.yml)
+## Run the offline verification
 
-> **Check the central claim yourself, in about two seconds:** `bash verify.sh`
->
-> The throughput figures below needed a Radeon, so you have to take those from the evidence
-> files. The argument underneath them does not. `verify.sh` runs on any laptop with Python and
-> no network, and proves the three things everything else rests on: that the oracle **rejects**
-> broken code as well as accepting correct code, that a request too vague to verify is refused
-> *before* a model is ever called, and that the shipped reference implementations are exact
-> across all 256 inputs of their domain — 1,024 assertions, a proof rather than a sample.
->
-> **And check the checks:** `bash verify.sh --selftest`
->
-> A green suite is evidence only if it could have been red. That mode breaks each check on
-> purpose and requires every sabotage to turn the run non-zero — and it refuses to credit a
-> sabotage that did not actually alter anything, because a mutation that silently no-ops looks
-> exactly like a catch. Both failure modes happened for real while this was written, which is
-> why it ships as a command you can run rather than a sentence claiming it was done once.
->
-> The badge above is the same two commands on a stock GitHub runner that asserts it has no GPU
-> before it starts, so a pass cannot be credited to hardware quietly doing the work.
+From the `Determinex` directory, run `python verify.py` with Python 3.11 or later, or
+`bash verify.sh` on a machine with Bash. It uses the bundled source and Python standard
+library. These fixed fixtures make no model calls and require no GPU or downloads.
+
+1. The [Determinex local oracle](src/scripts/determinex_local_oracle.py) runs three Python
+   candidates against three input/output examples. It accepts the correct one, and reports
+   different failure classes for a syntax error and for runnable code that returns 42.
+2. The [test synthesizer](verify_src/determinex_synthesize.py) classifies a vague spec as
+   having only a symbol-existence test. A spec with three explicit examples produces
+   behavioral tests. This exercises the offline synthesis step. The full builder can ask
+   a model to propose examples.
+3. Four of the bit playbook's twelve entries are compared with independent expectations:
+   popcount, leading-zero count, power-of-two detection, and bit reversal. The check
+   covers all 256 unsigned 8-bit inputs for each (1,024 comparisons).
+
+Run `python verify.py --selftest` or `bash verify.sh --selftest` for negative controls.
+Each mutation changes one source in a temporary copy. The expected failure must name the
+specific fault, and both unrelated checks must still pass. An error loading any input
+makes the run fail. [Verification code](verify.py)
 
 ---
 
